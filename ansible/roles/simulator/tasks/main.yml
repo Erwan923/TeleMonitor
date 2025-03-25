@@ -1,0 +1,33 @@
+---
+- name: Créer le répertoire pour le simulateur
+  file:
+    path: /opt/telemonitor/simulator
+    state: directory
+    mode: '0755'
+
+- name: Copier les fichiers du simulateur
+  copy:
+    src: "{{ item }}"
+    dest: /opt/telemonitor/simulator/
+    mode: '0644'
+  with_items:
+    - app.py
+    - Dockerfile
+    - templates/
+    - dashboards/
+
+- name: Construire l'image Docker du simulateur
+  docker_image:
+    name: telemonitor/simulator
+    build:
+      path: /opt/telemonitor/simulator
+    source: build
+
+- name: Démarrer le conteneur du simulateur
+  docker_container:
+    name: telecom-simulator
+    image: telemonitor/simulator
+    ports:
+      - "5000:5000"
+      - "8000:8000"
+    restart_policy: always

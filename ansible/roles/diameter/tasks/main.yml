@@ -1,0 +1,43 @@
+---
+- name: Installer les dépendances
+  apt:
+    name:
+      - docker.io
+    state: present
+    update_cache: yes
+
+- name: S'assurer que Docker est démarré
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Créer le répertoire pour l'exporteur Diameter
+  file:
+    path: /opt/diameter-exporter
+    state: directory
+    mode: '0755'
+
+- name: Configurer le firewall
+  block:
+    - name: S'assurer que firewalld est en cours d'exécution
+      service:
+        name: firewalld
+        state: started
+
+    - name: Autoriser les données de l'exporteur Diameter sur l'interface privée
+      shell:
+        cmd: firewall-cmd --permanent --zone=smartms-private --add-rich-rule='rule family="ipv4" destination address="{{ ansible_eth1.ipv4.address }}" port port="{{ prometheus_diameter_exporter_port | default(9111) }}" protocol="tcp" accept'
+      
+    - name: Recharger firewalld
+      shell:
+        cmd: firewall-cmd --reload
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+- name: Démarrer l'exporteur Diameter
+  docker_container:
+    name: diameter-exporter
+    image: telecomsim/diameter-exporter:latest
+    ports:
+      - "{{ prometheus_diameter_exporter_port | default(9111) }}:9111"
+    restart_policy: always

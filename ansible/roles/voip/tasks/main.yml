@@ -1,0 +1,27 @@
+---
+- name: Installer les dépendances
+  apt:
+    name:
+      - docker.io
+    state: present
+    update_cache: yes
+
+- name: S'assurer que Docker est démarré
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Créer le répertoire pour l'exporteur VoIP
+  file:
+    path: /opt/voip-exporter
+    state: directory
+    mode: '0755'
+
+- name: Démarrer l'exporteur VoIP
+  docker_container:
+    name: voip-exporter
+    image: telecomsim/voip-exporter:latest
+    ports:
+      - "9010:9010"
+    restart_policy: always

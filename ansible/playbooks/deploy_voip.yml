@@ -1,0 +1,7 @@
+---
+- name: Déployer le monitoring VoIP
+  hosts: all
+  become: true
+  roles:
+    - common
+    - voip

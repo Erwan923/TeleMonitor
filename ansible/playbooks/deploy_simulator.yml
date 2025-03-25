@@ -1,0 +1,7 @@
+---
+- name: Déployer le simulateur TeleMonitor
+  hosts: all
+  become: true
+  roles:
+    - common
+    - simulator

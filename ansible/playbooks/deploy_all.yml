@@ -1,0 +1,10 @@
+---
+- name: Déployer TeleMonitor complet
+  hosts: all
+  become: true
+  roles:
+    - common
+    - simulator
+    - monitoring
+    - diameter
+    - voip

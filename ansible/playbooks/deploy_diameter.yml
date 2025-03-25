@@ -1,0 +1,9 @@
+---
+- name: Déployer l'exporteur Diameter
+  hosts: all
+  become: true
+  roles:
+    - common
+    - diameter
+  vars:
+    prometheus_diameter_exporter_port: 9111

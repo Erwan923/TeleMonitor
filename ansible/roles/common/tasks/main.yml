@@ -1,0 +1,26 @@
+---
+- name: Mettre à jour les paquets
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Installer les dépendances communes
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - docker.io
+      - docker-compose
+    state: present
+
+- name: S'assurer que Docker est démarré
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Créer le répertoire pour TeleMonitor
+  file:
+    path: /opt/telemonitor
+    state: directory
+    mode: '0755'
