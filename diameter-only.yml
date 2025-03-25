@@ -1,0 +1,40 @@
+# docker/presets/diameter-only.yml
+version: '3'
+
+# Diameter-only preset: Focus on Diameter protocol monitoring
+services:
+  # Diameter protocol exporter
+  diameter-exporter:
+    image: telemonitor/diameter-exporter:latest
+    build:
+      context: ../exporters/diameter
+    ports:
+      - "9111:9111"
+    environment:
+      - DIAMETER_LISTEN_PORT=9111
+      - DIAMETER_SIMULATION_ENABLED=true
+      - DIAMETER_SIMULATION_INTERVAL=5
+    networks:
+      - telemonitor
+    restart: unless-stopped
+
+---
+# docker/presets/voip-only.yml
+version: '3'
+
+# VoIP-only preset: Focus on VoIP monitoring
+services:
+  # VoIP monitoring exporter
+  voip-exporter:
+    image: telemonitor/voip-exporter:latest
+    build:
+      context: ../exporters/voip
+    ports:
+      - "9010:9010"
+    environment:
+      - VOIP_LISTEN_PORT=9010
+      - VOIP_SIMULATION_ENABLED=true
+      - VOIP_SIMULATION_INTERVAL=5
+    networks:
+      - telemonitor
+    restart: unless-stopped

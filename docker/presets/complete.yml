@@ -1,0 +1,102 @@
+version: '3'
+
+# Complete preset: All components enabled
+# Includes all specialized exporters and monitoring components
+
+services:
+  # Diameter protocol exporter
+  diameter-exporter:
+    image: telemonitor/diameter-exporter:latest
+    build:
+      context: ../exporters/diameter
+    ports:
+      - "9111:9111"
+    environment:
+      - DIAMETER_LISTEN_PORT=9111
+      - DIAMETER_SIMULATION_ENABLED=true
+      - DIAMETER_SIMULATION_INTERVAL=5
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9111/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # VoIP monitoring exporter
+  voip-exporter:
+    image: telemonitor/voip-exporter:latest
+    build:
+      context: ../exporters/voip
+    ports:
+      - "9010:9010"
+    environment:
+      - VOIP_LISTEN_PORT=9010
+      - VOIP_SIMULATION_ENABLED=true
+      - VOIP_SIMULATION_INTERVAL=5
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9010/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # IPsec tunnel monitoring
+  ipsec-exporter:
+    image: telemonitor/ipsec-exporter:latest
+    build:
+      context: ../exporters/ipsec
+    ports:
+      - "8079:8079"
+    environment:
+      - IPSEC_LISTEN_PORT=8079
+      - IPSEC_SIMULATION_ENABLED=true
+      - IPSEC_SIMULATION_INTERVAL=5
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8079/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Node exporter for host metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "9100:9100"
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Alertmanager for alerts
+  alertmanager:
+    image: prom/alertmanager:latest
+    volumes:
+      - ../config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - telemonitor
+    restart: unless-stopped

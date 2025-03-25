@@ -1,0 +1,9 @@
+version: '3'
+
+# Basic preset: Simulator + Prometheus + Grafana
+# This is the minimal setup with just the core components
+
+services:
+  # All services are defined in the main docker-compose.yml file
+  # This file is empty but needed for the preset structure
+  # The basic preset uses only the core components from the main file

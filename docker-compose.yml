@@ -1,0 +1,98 @@
+version: '3'
+
+# Main network for all services
+networks:
+  telemonitor:
+    driver: bridge
+
+# Shared volumes for persistent data
+volumes:
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${TELEMONITOR_STORAGE_DIR}/prometheus
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${TELEMONITOR_STORAGE_DIR}/grafana
+
+# Common services
+services:
+  # Web simulator (core component)
+  telecom-simulator:
+    build:
+      context: ../simulator
+    image: telemonitor/simulator:latest
+    ports:
+      - "${TELEMONITOR_WEB_PORT}:5000"  # Web interface
+      - "8000:8000"                     # Prometheus metrics
+    volumes:
+      - ../simulator/dashboards:/app/dashboards
+    environment:
+      - SIMULATION_INTERVAL=5
+      - LOG_LEVEL=INFO
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Prometheus (metrics collection)
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - prometheus_data:/prometheus
+      - ../config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../config/prometheus/rules:/etc/prometheus/rules
+    ports:
+      - "${TELEMONITOR_PROMETHEUS_PORT}:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=${TELEMONITOR_DATA_RETENTION}'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Grafana (visualization)
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../simulator/dashboards:/etc/grafana/provisioning/dashboards
+      - ../config/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ../config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "${TELEMONITOR_GRAFANA_PORT}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

@@ -1,0 +1,108 @@
+# config/prometheus/prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+# Alerting rules
+rule_files:
+  - "rules/*.yml"
+
+# Alert manager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - alertmanager:9093
+
+# Scrape configurations
+scrape_configs:
+  # Simulator metrics
+  - job_name: 'telecom-simulator'
+    static_configs:
+      - targets: ['telecom-simulator:8000']
+        labels:
+          service: 'telecom-simulator'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Grafana monitoring
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          service: 'grafana'
+
+  # Diameter exporter
+  - job_name: 'diameter-exporter'
+    static_configs:
+      - targets: ['diameter-exporter:9111']
+        labels:
+          service: 'diameter'
+
+  # VoIP exporter
+  - job_name: 'voip-exporter'
+    static_configs:
+      - targets: ['voip-exporter:9010']
+        labels:
+          service: 'voip'
+
+  # IPsec exporter
+  - job_name: 'ipsec-exporter'
+    static_configs:
+      - targets: ['ipsec-exporter:8079']
+        labels:
+          service: 'ipsec'
+
+  # Node exporter (host metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node'
+
+---
+# config/prometheus/rules/telecom_alerts.yml
+groups:
+- name: telecom_alerts
+  rules:
+  - alert: DiameterHighErrorRate
+    expr: rate(telecom_diameter_errors_total[5m]) > 5
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Diameter error rate"
+      description: "Diameter protocol showing high error rate (> 5 errors/s for 2m)"
+
+  - alert: VoIPQualityPoor
+    expr: telecom_voip_mos < 3.0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Poor VoIP call quality"
+      description: "VoIP call quality (MOS) is below 3.0 for codec {{ $labels.codec }}"
+
+  - alert: IPsecTunnelDown
+    expr: telecom_ipsec_tunnels{state="failed"} > 0
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "IPsec tunnels in failed state"
+      description: "{{ $value }} IPsec tunnels are currently in failed state"
+
+  - alert: VoIPHighPacketLoss
+    expr: telecom_voip_packet_loss_percent > 2
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High VoIP packet loss"
+      description: "VoIP packet loss for codec {{ $labels.codec }} is {{ $value }}%"

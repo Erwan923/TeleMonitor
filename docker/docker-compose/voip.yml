@@ -1,9 +1,0 @@
-version: '3'
-
-services:
-  voip-exporter:
-    image: telecomsim/voip-exporter:latest
-    ports:
-      - "9010:9010"  # Port de l'exporteur VoIP
-    networks:
-      - telemonitor

@@ -1,0 +1,68 @@
+version: '3'
+
+# Telco Core preset: Focus on telecom protocol monitoring
+# Includes specialized exporters for telecom protocols
+
+services:
+  # Diameter protocol exporter
+  diameter-exporter:
+    image: telemonitor/diameter-exporter:latest
+    build:
+      context: ../exporters/diameter
+    ports:
+      - "9111:9111"
+    environment:
+      - DIAMETER_LISTEN_PORT=9111
+      - DIAMETER_SIMULATION_ENABLED=true
+      - DIAMETER_SIMULATION_INTERVAL=5
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9111/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # VoIP monitoring exporter
+  voip-exporter:
+    image: telemonitor/voip-exporter:latest
+    build:
+      context: ../exporters/voip
+    ports:
+      - "9010:9010"
+    environment:
+      - VOIP_LISTEN_PORT=9010
+      - VOIP_SIMULATION_ENABLED=true
+      - VOIP_SIMULATION_INTERVAL=5
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9010/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # IPsec tunnel monitoring
+  ipsec-exporter:
+    image: telemonitor/ipsec-exporter:latest
+    build:
+      context: ../exporters/ipsec
+    ports:
+      - "8079:8079"
+    environment:
+      - IPSEC_LISTEN_PORT=8079
+      - IPSEC_SIMULATION_ENABLED=true
+      - IPSEC_SIMULATION_INTERVAL=5
+    networks:
+      - telemonitor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8079/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

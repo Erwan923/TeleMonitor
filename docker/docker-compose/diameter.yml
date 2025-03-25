@@ -1,9 +1,0 @@
-version: '3'
-
-services:
-  diameter-exporter:
-    image: telecomsim/diameter-exporter:latest
-    ports:
-      - "9111:9111"  # Port de l'exporteur Diameter
-    networks:
-      - telemonitor
